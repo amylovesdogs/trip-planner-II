@@ -44,9 +44,6 @@
       <div class="panel panel-default">
         <div class="panel-heading">
           <div class="day-buttons">
-            <button class="btn btn-circle day-btn">1</button>
-            <button class="btn btn-circle day-btn current-day">2</button>
-            <button class="btn btn-circle day-btn">3</button>
             <button class="btn btn-circle day-btn" id="day-add">+</button>
           </div>
         </div>
@@ -96,27 +93,47 @@
       $('#activity-choices').append(option);
   });
 
-  function addItineraryItem(title) {
-    return  '<div class="itinerary-item">'+
-            '<span class="title">'+title+'</span>'+
-            '<button class="btn btn-xs btn-danger remove btn-circle">x</button></div>';
+  function typeToId(type) {
+    var output = '#my';
+    output += type.charAt(0).toUpperCase() + type.substring(1);
+    return output;
   }
 
-  function removeItineraryItem() {
-    var name = $(this).prev().text().replace(/\s/g,"_");
-    console.log(name);
-    $(this).parent().remove();
+  function idToType(id) {
+    var output = id.substring(2);
+    output = output.charAt(0).toLowerCase() + output.substring(1);
+    return output;
+  }
+
+  function addItineraryItem(type, data) {
+    var htmlString = '<div class="itinerary-item">'+
+            '<span class="title">'+data.name+'</span>'+
+            '<button class="btn btn-xs btn-danger remove btn-circle">x</button></div>';
+    $(typeToId(type)).append(htmlString);
+    var str = data.name.replace(/\s/g,"_");
+    drawMarker(type, data.place.location, str);
+  }
+
+  function removeItineraryItem(element) {
+    var name = $(element).prev().text().replace(/\s/g,"_");
+    $(element).parent().remove();
     var marker = markers[name];
-    console.log(marker);
     if (marker) marker.setMap(null);
+  }
+
+  function removeAndDeleteItineraryItem() {
+    element = this;
+    var id = $(element).closest('ul').attr('id');
+    var type;
+    if (id) type = idToType(id);
+    days[currentDay][type] = null;
+    removeItineraryItem(element);
   }
 
   function addHotel() {
     var data = $( "#hotel-choices option:selected" ).data("hotel");
-    var htmlString = addItineraryItem(data.name);
-    $('#myHotel').append(htmlString);
-    var str = data.name.replace(/\s/g,"_");
-    drawMarker('hotel', data.place.location, str);
+    addItineraryItem('hotel', data);
+    days[currentDay].hotel = data;
   }
 
   function addRestaurant() {
@@ -125,6 +142,7 @@
     $('#myRestaurant').append(htmlString);
     var str = data.name.replace(/\s/g,"_");
     drawMarker('restaurant', data.place.location, str);
+    days[currentDay].restaurants.push(data);
   }
 
   function addActivity() {
@@ -133,14 +151,64 @@
     $('#myActivity').append(htmlString);
     var str = data.name.replace(/\s/g,"_");
     var marker = drawMarker('activity', data.place.location,str);
+    days[currentDay].activities.push(data);
+  }
+
+  function updateHotel() {
+    let buttons = $('#myHotel button');
+    $.each(buttons, function( index, value ) {
+      removeItineraryItem(value);
+    })
+    var hotel = days[currentDay].hotel;
+    if (!hotel) return;
+    addItineraryItem('hotel', hotel);
+  }
+
+  function updateRestaurants() {
+    $('#myRestaurant').children().remove();
+    var restaurants = days[currentDay].restaurants;
+    restaurants.forEach(restaurant => {
+      var htmlString = addItineraryItem(restaurant.name);
+      $('#myRestaurant').append(htmlString);
+    })
+  }
+
+  var days = [{}];
+  var numDays = 0;
+  var currentDay = 1;
+  addDay();
+  switchDay(null, $("#day1"));
+
+  function addDay() {
+    numDays++;
+    var htmlString = '<button class="btn btn-circle day-btn"' + 'id=day' + numDays + '>' +numDays+ '</button>';
+    $( "#day-add" ).before(htmlString);
+    var day = {
+      hotel: null,
+      restaurants: [],
+      activities: []
+    }
+    days.push(day);
+  }
+
+  function switchDay(event, element) {
+    element = element || this;
+    var button = $(element);
+    if (button.text() === '+') return;
+    var day = Number(button.text());
+    $( "#day" + currentDay ).removeClass('current-day');
+    currentDay = day;
+    button.addClass('current-day');
+    updateHotel();
+    updateRestaurants();
   }
 
   $('#add-hotel').on('click',addHotel);
   $('#add-restaurant').on('click',addRestaurant);
   $('#add-activity').on('click',addActivity);
-  $('#itinerary').on('click','button',removeItineraryItem);
-
-
+  $('#itinerary').on('click','button', removeAndDeleteItineraryItem);
+  $('#day-add').on('click', addDay);
+  $('.day-buttons').on('click','button', switchDay);
 
   console.log(hotels);
 </script>
