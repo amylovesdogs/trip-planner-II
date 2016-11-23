@@ -16,26 +16,20 @@
           <div>
             <h4>Hotels</h4>
             <select data-type="hotel" id="hotel-choices">
-              <option>Andaz Wall Street</option>
-              <option>...</option>
             </select>
-            <button data-action="add" class="btn btn-primary btn-circle pull-right">+</button>
+            <button data-action="add" id="add-hotel" class="btn btn-primary btn-circle pull-right">+</button>
           </div>
           <div>
             <h4>Restaurants</h4>
             <select data-type="restaurant" id="restaurant-choices">
-              <option>Bouley</option>
-              <option>...</option>
             </select>
-            <button data-action="add" class="btn btn-primary btn-circle pull-right">+</button>
+            <button data-action="add" id="add-restaurant" class="btn btn-primary btn-circle pull-right">+</button>
           </div>
           <div>
             <h4>Activities</h4>
             <select data-type="activity" id="activity-choices">
-              <option>Mahayana Buddhist Temple Association</option>
-              <option>...</option>
             </select>
-            <button data-action="add" class="btn btn-primary btn-circle pull-right">+</button>
+            <button data-action="add" id="add-activity" class="btn btn-primary btn-circle pull-right">+</button>
           </div>
         </div>
       </div>
@@ -43,8 +37,8 @@
     <div class="col-xs-6 col-sm-12">
       <h3>
         <span id="day-title">
-          <span>Day 2</span>
-          <button class="btn btn-xs btn-danger remove btn-circle">x</button>
+          <span>Day 1</span>
+          <button id="add-day" class="btn btn-xs btn-danger remove btn-circle">x</button>
         </span>
       </h3>
       <div class="panel panel-default">
@@ -59,29 +53,17 @@
         <div class="panel-body" id="itinerary">
           <div>
             <h4>My Hotel</h4>
-            <ul class="list-group">
-              <div class="itinerary-item">
-                <span class="title">Andaz Wall Street</span>
-                <button class="btn btn-xs btn-danger remove btn-circle">x</button>
-              </div>
+            <ul class="list-group" id="myHotel">
             </ul>
           </div>
           <div>
             <h4>My Restaurants</h4>
-            <ul class="list-group">
-              <div class="itinerary-item">
-                <span class="title">Bouley</span>
-                <button class="btn btn-xs btn-danger remove btn-circle">x</button>
-              </div>
+            <ul class="list-group" id="myRestaurant">
             </ul>
           </div>
           <div>
             <h4>My Activities</h4>
-            <ul class="list-group">
-              <div class="itinerary-item">
-                <span class="title">Mahayana Buddhist Temple Association</span>
-                <button class="btn btn-xs btn-danger remove btn-circle">x</button>
-              </div>
+            <ul class="list-group" id="myActivity">
             </ul>
           </div>
         </div>
@@ -89,4 +71,77 @@
     </div>
   </div>
 </div>
+<script>
+  // var db = [1];
+  // var day = 0;
+  var hotels = {{ hotels | dump | safe }};
+  var restaurants = {{ restaurants | dump | safe }};
+  var activities = {{ activities | dump | safe }};
+  $.each(hotels, function(index, value) {
+      var option = $(document.createElement('option'));
+      option.text(value.name);
+      option.data("hotel",value);
+      $('#hotel-choices').append(option);
+  });
+  $.each(restaurants, function(index, value) {
+      var option = $(document.createElement('option'));
+      option.text(value.name);
+      option.data("restaurant",value);
+      $('#restaurant-choices').append(option);
+  });
+  $.each(activities, function(index, value) {
+      var option = $(document.createElement('option'));
+      option.text(value.name);
+      option.data("activity",value);
+      $('#activity-choices').append(option);
+  });
+
+  function addItineraryItem(title) {
+    return  '<div class="itinerary-item">'+
+            '<span class="title">'+title+'</span>'+
+            '<button class="btn btn-xs btn-danger remove btn-circle">x</button></div>';
+  }
+
+  function removeItineraryItem() {
+    var name = $(this).prev().text().replace(/\s/g,"_");
+    console.log(name);
+    $(this).parent().remove();
+    var marker = markers[name];
+    console.log(marker);
+    if (marker) marker.setMap(null);
+  }
+
+  function addHotel() {
+    var data = $( "#hotel-choices option:selected" ).data("hotel");
+    var htmlString = addItineraryItem(data.name);
+    $('#myHotel').append(htmlString);
+    var str = data.name.replace(/\s/g,"_");
+    drawMarker('hotel', data.place.location, str);
+  }
+
+  function addRestaurant() {
+    var data = $( "#restaurant-choices option:selected" ).data("restaurant");
+    var htmlString = addItineraryItem(data.name);
+    $('#myRestaurant').append(htmlString);
+    var str = data.name.replace(/\s/g,"_");
+    drawMarker('restaurant', data.place.location, str);
+  }
+
+  function addActivity() {
+    var data = $( "#activity-choices option:selected" ).data("activity");
+    var htmlString = addItineraryItem(data.name);
+    $('#myActivity').append(htmlString);
+    var str = data.name.replace(/\s/g,"_");
+    var marker = drawMarker('activity', data.place.location,str);
+  }
+
+  $('#add-hotel').on('click',addHotel);
+  $('#add-restaurant').on('click',addRestaurant);
+  $('#add-activity').on('click',addActivity);
+  $('#itinerary').on('click','button',removeItineraryItem);
+
+
+
+  console.log(hotels);
+</script>
 {% endblock %}
